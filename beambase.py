@@ -39,7 +39,7 @@ class GaussBeam(object):
         w : flaot
             Beam radius. Defined as the 1/e**2 intensity half width. (unit: mm)
         traj : dict of list
-            beam trajectory containing all the tracks of attributes' values.
+            Beam trajectory containing all the tracks of the attributes' values.
             traj['z_mm'] : track of z coordinate.
             traj['n'] : track of refractive index.
             traj['R_mm'] : track of Wavefront curvature radius.
@@ -177,6 +177,10 @@ class GaussBeam(object):
         d : float
             Length of the medium in which the beam propagates.
 
+        Returns
+        -------
+        object, transformed GaussBeam object.
+
         """
         n_new = self.n
         z_new = self.z + d
@@ -199,6 +203,10 @@ class GaussBeam(object):
         dz : float
             Finite step size of the iterative propagation along z.
             Default: 0.01
+        
+        Returns
+        -------
+        object, transformed GaussBeam object.
 
         """
         for _ in range(int(d_total/dz)):
@@ -215,6 +223,10 @@ class GaussBeam(object):
         ----------
         f : float
             Effective focal length of the thin lens.
+
+        Returns
+        -------
+        object, transformed GaussBeam object.
 
         """
         n_new = self.n
@@ -241,10 +253,42 @@ class GaussBeam(object):
         `self.n` need to be changed from n1 to n2 before make R and w in order to make w continuous 
         at the interface.
 
+        Returns
+        -------
+        object, transformed GaussBeam object.
+
         """
         n1 = self.n
         z_new = self.z
         q_new = self.q * (n2/n1)
+        self.n = n2
+        R_new = self.make_R_from_q(q_new)
+        w_new = self.make_w_from_q(q_new)
+        self._set(n2, z_new, R_new, w_new)
+        return self
+    
+    def interface_curved(self, n2, r):
+        """Beam transformation method of refraction at a curved dielectric interface.
+
+        This method converts the q-parameter of the gaussian beam according to the ABCD law:
+        A = 1, B = 0, C = (n2 - n1)/(n2*r), D = n1/n2
+
+        Parameters
+        ----------
+        n2 : float
+            Refractive index of the next medium.
+        r  : float
+            Curvature radius of the interface (unit: mm). r > 0, convex; r < 0, concave.
+            Focal length,  f = r/2.
+        
+        Returns
+        -------
+        object, transformed GaussBeam object.
+
+        """
+        n1 = self.n
+        z_new = self.z
+        q_new = self.q / (self.q * (n2 - n2)/(n2*r) + n1/n2)
         self.n = n2
         R_new = self.make_R_from_q(q_new)
         w_new = self.make_w_from_q(q_new)

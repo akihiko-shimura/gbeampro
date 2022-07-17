@@ -2,6 +2,6 @@
 init file of gbeampro package
 """
 
-from . import beam_base
+from . import beambase
 from . import helper
 
