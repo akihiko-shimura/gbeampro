@@ -2,6 +2,7 @@
 
 *gbeampro* is a small Python package for designing gaussian laser beam propagation and transformations (e.g., focusing and collimation, refraction at crystal interface, etc.).
 
+
 ## Example: Beam focusing into a slab of crystal
 
 To compute the waist diameter inside the crystal and find the confocal parameter (collimated range).
@@ -161,7 +162,7 @@ b1.propagate(100)
 
 ```python
 # plot beam trajectory
-fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True, figsize=(8, 16))
+fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True, figsize=(8, 16), facecolor="white")
 b1.plot_n(ax1)
 b1.plot_w(ax2)
 b1.plot_R(ax3)
@@ -170,7 +171,7 @@ b1.plot_theta(ax4)
 
 
     
-![output_12_0](https://user-images.githubusercontent.com/88579896/179394833-5f324f54-21c8-4159-8e14-fa05eb72f63c.png)
+![output_12_0](https://user-images.githubusercontent.com/88579896/179395036-151ba08b-37c3-4ecd-b0d0-ac2598329c24.png)
 
     
 
@@ -205,3 +206,4 @@ b1.search_BeamWaists()
 
 
 You can see the focusing condition at the above result No.1.
+
