@@ -78,7 +78,6 @@ The beam enters a slab of LBO crystal. Refractive index `n2` of the crystal need
 
 
 ```python
-# Air-Crystal interface
 Xtal = nd.media.crystals.LBO_Newlight_xy() # crystal object
 n2 = Xtal.n(1.064, 0, 149, pol='o') # refractive index of the crystal
 b1.interface(n2)
@@ -165,7 +164,6 @@ b1.propagate(100)
 Let's plot the beam trajectory in terms of its four parameters:
 
 ```python
-# plot beam trajectory
 fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True, figsize=(8, 16), facecolor="white")
 b1.plot_n(ax1)
 b1.plot_w(ax2)
@@ -182,7 +180,6 @@ We want to find the beam waist inside the crystal. So use `search_BeamWaists` me
 
 
 ```python
-# search beam waists
 b1.search_BeamWaists()
 ```
 
