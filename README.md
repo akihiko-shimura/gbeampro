@@ -1,13 +1,17 @@
 # gbeampro
 
-*gbeampro* is a small Python package for designing gaussian laser beam propagation and transformations (e.g., focusing and collimation, refraction at crystal interface, etc.).
+*gbeampro* is a small Python package for designing gaussian laser beam propagation and transformations (e.g., focusing and collimation, refraction at crystal interface, etc.). 
 
+## Install
+```shell
+pip install gbeampro
+```
 
 ## Example: Beam focusing into a slab of crystal
 
-To compute the waist diameter inside the crystal and find the confocal parameter (collimated range).
+This is an example of how to compute the waist diameter inside the crystal and find the confocal parameter (collimated range).
 
-
+At first, import a fundamental Gaussian beam class from `gbeampro.beambase`.
 ```python
 import ndispers as nd
 import numpy as np
@@ -15,13 +19,21 @@ import matplotlib.pyplot as plt
 from gbeampro.beambase import GaussBeam
 ```
 
+Secondly, make an instance of `GaussBeam` object by giving the five parameters:
+1. `wl_um` : Wavelength of the laser beam (unit: µm)
+2. `n` : Refractive index of the medium in which the beam starts to propagate
+3. `z_mm` : z coordinate of the wavefront. (unit: mm)
+            Wavevector of the gaussian beam is assumed to be along to z axis.
+4. `R_mm` :  Wavefront curvature radius. (unit: mm)
+5. `w_mm` : Beam radius, defined as the 1/e**2 intensity half width. (unit: mm)
 
+We will set a beam, named `b1`,  whose waist is located at z=0 and the beam radius is 1.5 mm at z=0, as follows:
 ```python
 # setup a GaussBeam instance
 b1 = GaussBeam(wl_um=1.064, n=1.0, z_mm=0, R_mm=np.infty, w_mm=1.5)
 ```
 
-
+By entering the beam instance, we can check the beam parameters at the present state.
 ```python
 b1
 ```
@@ -33,30 +45,28 @@ b1
       q : 0.00000e+00 -6.64341e+03i
       theta : 2.257878e-01 mrad
 
+Here a complex *q-parameter* and *beam divergence (half) angle*(`theta`) are also printed.
 
 
-
+Next, let's put a thin lens (focal length = 150 mm) at z=0,
 ```python
-# converge by a thin lens (f=150 mm)
 b1.thinlens(150)
 ```
 
 
-
+Then, the transformed beam parameters are shown:
 
     GaussBeam(wl_um=1.06400, n=1.000000, z_mm=0.00000, R_mm=-1.50000e+02, w_mm=1.50000)
       q : -1.49924e+02 -3.38509e+00i
       theta : 2.257878e-01 mrad
 
-
+And let the beam propagate in air (n=1.0) upto the entrance face of a crystal,
 
 
 ```python
-# propagate upto crystal interface
-# + 5 distance tries to bring the wasit location at the center of the crystal
 b1.propagate(150 - 20*0.5 + 5)
 ```
-
+(Here `+ 5` distance is tring to bring the wasit location at the center of the crystal.)
 
 
 
@@ -64,7 +74,7 @@ b1.propagate(150 - 20*0.5 + 5)
       q : -4.92357e+00 -3.38509e+00i
       theta : 5.666828e+00 mrad
 
-
+The beam enters a slab of LBO crystal. Refractive index `n2` of the crystal need to be computed.
 
 
 ```python
@@ -82,10 +92,9 @@ b1.interface(n2)
       theta : 3.532224e+00 mrad
 
 
-
+Then the beam propagate inside the crystal upto its end face. Let the crystal length be 20 mm.
 
 ```python
-# propagate inside crystal (length 20 mm)
 b1.propagate(20)
 ```
 
@@ -97,10 +106,9 @@ b1.propagate(20)
       theta : 2.552784e+00 mrad
 
 
-
+At the end face of the crystal, the beam goes out into air (with n=1.0).
 
 ```python
-# Crystal-Air interface
 b1.interface(1.0)
 ```
 
@@ -112,14 +120,12 @@ b1.interface(1.0)
       theta : 4.095503e+00 mrad
 
 
-
+We want the diverging beam to be collimated. So let the beam propagate in air upto the second lens (f=200).
 
 ```python
-# propagate in air upto a lens
-# + 5 distance tries to collimate after lens 2
 b1.propagate(200 - 20*0.5 + 5)
 ```
-
+(Here `+ 5` distance is for trying to collimate the beam as much as possible after the second lens.)
 
 
 
@@ -128,10 +134,9 @@ b1.propagate(200 - 20*0.5 + 5)
       theta : 1.671490e-01 mrad
 
 
-
+The second thin lens collimates the beam.
 
 ```python
-# collimate by a thin lens (f=200mm)
 b1.thinlens(200)
 ```
 
@@ -143,10 +148,9 @@ b1.thinlens(200)
       theta : 1.671490e-01 mrad
 
 
-
+Finally, let the beam propagate in air for an illustration purpose.
 
 ```python
-# propagate in air by distance 100 mm
 b1.propagate(100)
 ```
 
@@ -158,7 +162,7 @@ b1.propagate(100)
       theta : 1.682224e-01 mrad
 
 
-
+Let's plot the beam trajectory in terms of its four parameters:
 
 ```python
 # plot beam trajectory
@@ -174,7 +178,7 @@ b1.plot_theta(ax4)
 ![output_12_0](https://user-images.githubusercontent.com/88579896/179395036-151ba08b-37c3-4ecd-b0d0-ac2598329c24.png)
 
     
-
+We want to find the beam waist inside the crystal. So use `search_BeamWaists` method. It searches all the sign-flip points of wavefront curvature (*R*), at which the beam becomes its waist.
 
 
 ```python
@@ -205,5 +209,5 @@ b1.search_BeamWaists()
       2.84 * Confocal parameter : 68854.49 mm
 
 
-You can see the focusing condition at the above result No.1.
+We can see the focusing condition inside the crystal at the above result No.1.
 
