@@ -27,7 +27,7 @@ Secondly, make an instance of `GaussBeam` object by giving the five parameters:
 4. `R_mm` :  Wavefront curvature radius. (unit: mm)
 5. `w_mm` : Beam radius, defined as the 1/e**2 intensity half width. (unit: mm)
 
-We will set a beam, named `b1`,  whose waist is located at z=0 and the beam radius is 1.5 mm at z=0, as follows:
+We will set a beam, named `b1`,  whose waist is located at z=0 and beam radius is 1.5 mm at z=0, as follows:
 ```python
 # setup a GaussBeam instance
 b1 = GaussBeam(wl_um=1.064, n=1.0, z_mm=0, R_mm=np.infty, w_mm=1.5)
