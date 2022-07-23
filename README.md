@@ -66,7 +66,7 @@ And let the beam propagate in air (n=1.0) upto the entrance face of a crystal,
 ```python
 b1.propagate(150 - 20*0.5 + 5)
 ```
-(Here `+ 5` distance is tring to bring the wasit location at the center of the crystal.)
+(Here `+ 5` distance is trying to bring the wasit location at the center of the crystal.)
 
 
 
@@ -125,7 +125,7 @@ We want the diverging beam to be collimated. So let the beam propagate in air up
 ```python
 b1.propagate(200 - 20*0.5 + 5)
 ```
-(Here `+ 5` distance is for trying to collimate the beam as much as possible after the second lens.)
+(Here `+ 5` distance is trying to collimate the beam as much as possible after the second lens.)
 
 
 
