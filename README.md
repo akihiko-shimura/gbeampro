@@ -27,7 +27,7 @@ Secondly, make an instance of `GaussBeam` object by giving the five parameters:
 4. `R_mm` :  Wavefront curvature radius. (unit: mm)
 5. `w_mm` : Beam radius, defined as the 1/e**2 intensity half width. (unit: mm)
 
-We will set a beam, named `b1`,  whose waist is located at z=0 and beam radius is 1.5 mm at z=0, as follows:
+We will set a beam, named `b1`,  whose waist is located at z=0 and beam radius is 1.5 mm at z=0, as follows.
 ```python
 # setup a GaussBeam instance
 b1 = GaussBeam(wl_um=1.064, n=1.0, z_mm=0, R_mm=np.infty, w_mm=1.5)
@@ -45,16 +45,16 @@ b1
       q : 0.00000e+00 -6.64341e+03i
       theta : 2.257878e-01 mrad
 
-Here a complex *q-parameter* and *beam divergence (half) angle*(`theta`) are also printed.
+Here a complex q-parameter and beam divergence (half) angle (`theta`) are also printed.
 
 
-Next, let's put a thin lens (focal length = 150 mm) at z=0,
+Next, let's put a thin lens (focal length, f=150 mm) at z=0,
 ```python
 b1.thinlens(150)
 ```
 
 
-Then, the transformed beam parameters are shown:
+The transformed beam parameters are shown:
 
     GaussBeam(wl_um=1.06400, n=1.000000, z_mm=0.00000, R_mm=-1.50000e+02, w_mm=1.50000)
       q : -1.49924e+02 -3.38509e+00i
@@ -74,15 +74,15 @@ b1.propagate(150 - 20*0.5 + 5)
       q : -4.92357e+00 -3.38509e+00i
       theta : 5.666828e+00 mrad
 
-The beam enters a slab of LBO crystal. Refractive index `n2` of the crystal need to be computed.
+The beam enters a slab of LBO crystal. Refractive index `n2` of the crystal need to be computed. 
 
 
 ```python
-Xtal = nd.media.crystals.LBO_Newlight_xy() # crystal object
-n2 = Xtal.n(1.064, 0, 149, pol='o') # refractive index of the crystal
+Xtal = nd.media.crystals.LBO_Newlight_xy()
+n2 = Xtal.n(1.064, 0, 149, pol='o') # for ordinary wave of wavelength 1.064 µm and temperature 149 degC.
 b1.interface(n2)
 ```
-
+(Note that extraordinary waves do not obey Snell's law and can not be applied to the `interface` method.)
 
 
 
@@ -91,7 +91,7 @@ b1.interface(n2)
       theta : 3.532224e+00 mrad
 
 
-Then the beam propagate inside the crystal upto its end face. Let the crystal length be 20 mm.
+Let the beam propagate inside the crystal upto its end faceof the crystal, whose length is 20 mm.
 
 ```python
 b1.propagate(20)
@@ -105,7 +105,7 @@ b1.propagate(20)
       theta : 2.552784e+00 mrad
 
 
-At the end face of the crystal, the beam goes out into air (with n=1.0).
+At the end face of the crystal, the beam goes out into the air (with n=1.0).
 
 ```python
 b1.interface(1.0)
@@ -119,7 +119,7 @@ b1.interface(1.0)
       theta : 4.095503e+00 mrad
 
 
-We want the diverging beam to be collimated. So let the beam propagate in air upto the second lens (f=200).
+We want the diverging beam to be collimated. So let the beam propagate in the air upto the second lens (f=200 mm).
 
 ```python
 b1.propagate(200 - 20*0.5 + 5)
