@@ -17,7 +17,7 @@ $$ 2 z_0 = \frac{2\pi w_0^2 n}{\lambda} $$
 
 [^2]: Yariv, Amnon. *Quantum electronics, Third edition*. John Wiley & Sons, 1989.)
 
-At first, import a fundamental (TEM00) Gaussian beam class from `gbeampro.beambase`.
+At first, import a fundamental ($\mathrm{TEM_{00}}$) Gaussian beam class from `gbeampro.beambase`.
 ```python
 import ndispers as nd
 import numpy as np
