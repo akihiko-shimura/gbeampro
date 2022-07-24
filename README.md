@@ -9,7 +9,7 @@ pip install gbeampro
 
 ## Example: Beam focusing into a slab of crystal
 
-This is an example of how to compute the waist diameter inside the crystal and find the **confocal parameter** (twice the Raleigh range):
+This is an example of how to compute the waist diameter inside the crystal and find the **confocal parameter** (twice the Rayleigh range):
 
 $$ 2 z_0 = \frac{2\pi w_0^2 n}{\lambda} $$
 
