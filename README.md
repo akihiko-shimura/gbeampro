@@ -1,6 +1,8 @@
 # gbeampro
 
-*gbeampro* is a small Python package for designing gaussian laser beam propagation and transformations (focusing and collimation, refraction at crystal interface, etc., for instance)  according to the ABCD law.
+*gbeampro* is a small Python package for designing gaussian laser beam propagation and transformations (focusing and collimation, refraction at crystal interface, etc., for instance)  according to the ABCD law[^1].
+
+[^1]: Kogelnik, Herwig. "Imaging of optical modes—resonators with internal lenses." Bell System Technical Journal 44.3 (1965): 455-494.
 
 ## Install
 ```shell
@@ -9,11 +11,11 @@ pip install gbeampro
 
 ## Example: Beam focusing into a slab of crystal
 
-This is an example of how to compute the waist diameter inside the crystal and find the **confocal parameter** (twice the Rayleigh range):
+This is an example of how to compute the waist diameter inside the crystal and find the **confocal parameter**[^2] (twice the Rayleigh range):
 
 $$ 2 z_0 = \frac{2\pi w_0^2 n}{\lambda} $$
 
-(Ref. Yariv, Amnon. *Quantum electronics, Third edition*. John Wiley & Sons, 1989.)
+[^2]: Yariv, Amnon. *Quantum electronics, Third edition*. John Wiley & Sons, 1989.)
 
 At first, import a fundamental (TEM00) Gaussian beam class from `gbeampro.beambase`.
 ```python
@@ -80,15 +82,15 @@ b1.propagate(150 - 20*0.5 + 5)
       theta : 5.666828e+00 mrad
 ```
 
-The beam enters a slab of LBO crystal. Refractive index `n2` of the crystal need to be computed. 
+The beam enters a slab of LBO crystal (biaxial crystal). Here we need to compute the refractive index `n2` of the crystal. 
 
 
 ```python
-Xtal = nd.media.crystals.LBO_Newlight_xy()
-n2 = Xtal.n(1.064, 0, 149, pol='o') # for ordinary wave of wavelength 1.064 µm and temperature 149 degC.
+Xtal = nd.media.crystals.LBO_Newlight_xy() # principal dielectric plane: xy
+n2 = Xtal.n(1.064, 0, 149, pol='o') # for ordinary ray of wavelength 1.064 µm and temperature 149 degC.
 b1.interface(n2)
 ```
-(Note that extraordinary waves do not obey Snell's law and therefore can not be applied to the `interface` method.)
+(Note that for extraordinary rays in ansiotropic crystals this propagation method can not be applied.)
 
 ```python
     GaussBeam(wl_um=1.06400, n=1.604333, z_mm=145.00000, R_mm=-1.16329e+01, w_mm=0.05977)
