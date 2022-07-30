@@ -82,7 +82,7 @@ b1.propagate(150 - 20*0.5 + 5)
       theta : 5.666828e+00 mrad
 ```
 
-The beam enters a slab of LBO crystal (biaxial crystal). Here we need to compute the refractive index `n2` of the crystal. 
+The beam enters a slab of LBO crystal (a biaxial crystal). Here we need to compute the refractive index `n2` of the crystal. 
 
 
 ```python
@@ -90,7 +90,7 @@ Xtal = nd.media.crystals.LBO_Newlight_xy() # principal dielectric plane: xy
 n2 = Xtal.n(1.064, 0, 149, pol='o') # for ordinary ray of wavelength 1.064 µm and temperature 149 degC.
 b1.interface(n2)
 ```
-(Note that for extraordinary rays in ansiotropic crystals this propagation method can not be applied.)
+(Note that this propagation method can not be applied for extraordinary rays in ansiotropic crystals.)
 
 ```python
     GaussBeam(wl_um=1.06400, n=1.604333, z_mm=145.00000, R_mm=-1.16329e+01, w_mm=0.05977)
