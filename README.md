@@ -11,13 +11,13 @@ pip install gbeampro
 
 ## Example: Beam focusing into a slab of crystal
 
-This is an example of how to compute the waist diameter inside the crystal and find the **confocal parameter**[^2] (twice the Rayleigh range):
+This is an example of how to compute the waist diameter inside the crystal and to find the **confocal parameter**[^2] (twice the Rayleigh range):
 
 $$ 2 z_0 = \frac{2\pi w_0^2 n}{\lambda} $$
 
 [^2]: Yariv, Amnon. *Quantum electronics, Third edition*. John Wiley & Sons, 1989.)
 
-At first, import a fundamental ($\mathrm{TEM_{00}}$) Gaussian beam class from `gbeampro.beambase`.
+At first, import a fundamental (TEM00) Gaussian beam class from `gbeampro.beambase`.
 ```python
 import ndispers as nd
 import numpy as np
@@ -52,7 +52,7 @@ Output:
       theta : 2.257878e-01 mrad
 ```
 
-Here a complex q-parameter (`q`) and beam divergence (half) angle (`theta`) are also printed.
+Here a complex q-parameter `q` and beam divergence (half) angle `theta` are also printed.
 
 
 Next, let's put a thin lens (focal length, f=150 mm) at z=0 by using a method,
