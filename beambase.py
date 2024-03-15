@@ -2,6 +2,7 @@
 Beam class
 """
 import numpy as np
+
 from gbeampro.helper import arg_signchange
 
 pi = np.pi
@@ -222,7 +223,7 @@ class GaussBeam(object):
         Parameters
         ----------
         f : float
-            Effective focal length of the thin lens.
+            Effective focal length of the thin lens (unit: mm).
 
         Returns
         -------
@@ -293,6 +294,62 @@ class GaussBeam(object):
         R_new = self.make_R_from_q(q_new)
         w_new = self.make_w_from_q(q_new)
         self._set(n2, z_new, R_new, w_new)
+        return self
+
+    def curved_mirror_tan(self, r, theta_deg):
+        """Reflection by curved mirror in the plane of incindence (tangential).
+
+        This method converts the q-parameter of the gaussian beam according to the ABCD law:
+        A = 1, B = 0, C = -2/(r*cos(theta)), D = 1
+
+        Parameters
+        ----------
+        r : float
+            Curvature radius of mirror (unit: mm). Focal length, f = r/2.
+        theta : float
+            Angle of incidence (unit: degree).
+        
+        Returns
+        -------
+        object, transformed GaussBeam object.
+
+        """
+        theta_rad = theta_deg * pi / 180 #rad
+        r_e = r * np.cos(theta_rad)
+        n_new = self.n
+        z_new = self.z
+        q_new = self.q / (- 2 * self.q / r_e + 1.0)
+        R_new = self.make_R_from_q(q_new)
+        w_new = self.make_w_from_q(q_new)
+        self._set(n_new, z_new, R_new, w_new)
+        return self
+
+    def curved_mirror_sag(self, r, theta_deg):
+        """Reflection by curved mirror perpendicular to the plane of incindence (sagittal).
+
+        This method converts the q-parameter of the gaussian beam according to the ABCD law:
+        A = 1, B = 0, C = -2/(r/cos(theta)), D = 1
+
+        Parameters
+        ----------
+        r : float
+            Curvature radius of mirror (unit: mm). Focal length, f = r/2.
+        theta : float
+            Angle of incidence (unit: degree).
+        
+        Returns
+        -------
+        object, transformed GaussBeam object.
+
+        """
+        theta_rad = theta_deg * pi / 180 #rad
+        r_e = r / np.cos(theta_rad)
+        n_new = self.n
+        z_new = self.z
+        q_new = self.q / (- 2 * self.q / r_e + 1.0)
+        R_new = self.make_R_from_q(q_new)
+        w_new = self.make_w_from_q(q_new)
+        self._set(n_new, z_new, R_new, w_new)
         return self
     
     def Amplitude(self, r):
