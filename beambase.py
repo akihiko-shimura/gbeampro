@@ -423,23 +423,28 @@ class GaussBeam(object):
         ax.set_xlabel("$z$ (mm)")
         ax.set_ylabel(r"$\theta$ (mrad)")
     
-    def search_BeamWaists(self):
+    def search_BeamWaists(self, return_w=False):
         """Search for and report the beam waists.
 
         Here beam waists are defined as the points where the sign of wavefront curvature flips.
+
+        if return_w is true, return `w_waist` array.
         """
         idx_waists = arg_signchange(np.asarray(self.traj['R_mm']))
         n_waists = np.asarray(self.traj['n'])[idx_waists]
         z_waists = np.asarray(self.traj['z_mm'])[idx_waists]
         w_waists = np.asarray(self.traj['w_mm'])[idx_waists]
 
-        print("\nBeam waists in z range [{:.3f}, {:3f}] mm".format(self.traj['z_mm'][0], self.traj['z_mm'][-1]))
-        print("--------------------------------------------------")
-        for i in range(idx_waists[0].size):
-            print("No.%d:" % i)
-            print("  Waist location, z  : {:.4f} mm".format(z_waists[i]))
-            print("  Refractive index, n  : {:.4f}".format(n_waists[i]))
-            print("  Waist spot diamter, 2*w0 : {:.1f} µm".format((2 * w_waists[i]*1e3)))
-            print("  Confocal parameter (2*Rayleigh range) : {:.2f} mm".format(2*pi * w_waists[i]**2 * n_waists[i] / (self.WL*1e-3)))
-            print("  2.84 * Confocal parameter : {:.2f} mm".format( 2.84 * 2*pi* (w_waists[i])**2 * n_waists[i] / (self.WL*1e-3) ))
-
+        if not return_w:
+            print("\nBeam waists in z range [{:.3f}, {:.3f}] mm".format(self.traj['z_mm'][0], self.traj['z_mm'][-1]))
+            print("--------------------------------------------------")
+            for i in range(idx_waists[0].size):
+                print("No.%d:" % i)
+                print("  Waist location, z  : {:.4f} mm".format(z_waists[i]))
+                print("  Refractive index, n  : {:.4f}".format(n_waists[i]))
+                print("  Waist spot diamter, 2*w0 : {:.1f} µm".format((2 * w_waists[i]*1e3)))
+                print("  Confocal parameter (2*Rayleigh range) : {:.2f} mm".format(2*pi * w_waists[i]**2 * n_waists[i] / (self.WL*1e-3)))
+                print("  2.84 * Confocal parameter : {:.2f} mm".format( 2.84 * 2*pi* (w_waists[i])**2 * n_waists[i] / (self.WL*1e-3) ))
+        
+        if return_w:
+            return w_waists
