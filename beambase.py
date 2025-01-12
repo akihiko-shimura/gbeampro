@@ -5,12 +5,17 @@ import numpy as np
 
 from gbeampro.helper import arg_signchange
 
+if np.__version__ >= '2.*':
+    infty = np.inf
+elif np.__version__ < '2.*':
+    infty = np.infty
+
 pi = np.pi
 
 class GaussBeam(object):
-    __slots__ = ["WL", "n", "z", "R", "w", "traj"]
+    __slots__ = ["WL", "n", "z", "R", "w", "label", "traj"]
 
-    def __init__(self, wl_um=1.064, n=1.0, z_mm=0, R_mm=np.infty, w_mm=1.0):
+    def __init__(self, wl_um=1.064, n=1.0, z_mm=0, R_mm=infty, w_mm=1.0, label=''):
         """Fundamental (TEM00) gaussian beam class.
 
         Parameters
@@ -25,6 +30,8 @@ class GaussBeam(object):
             Wavefront curvature radius. (unit: mm)
         w : flaot
             Beam radius. Defined as the 1/e**2 intensity half width. (unit: mm)
+        label : str
+            Label of the beam.
         
         Attributes
         ----------
@@ -39,6 +46,8 @@ class GaussBeam(object):
             Wavefront curvature radius. (unit: mm)
         w : flaot
             Beam radius. Defined as the 1/e**2 intensity half width. (unit: mm)
+        label : str
+            Label of the beam.
         traj : dict of list
             Beam trajectory containing all the tracks of the attributes' values.
             traj['z_mm'] : track of z coordinate.
@@ -54,6 +63,7 @@ class GaussBeam(object):
         self.z = float(z_mm)
         self.R = float(R_mm)
         self.w = float(w_mm)
+        self.label = str(label)
 
         self.traj = {'n':[float(n)], 
                      'z_mm': [float(z_mm)], 
@@ -159,9 +169,9 @@ class GaussBeam(object):
         self._add_to_traj(n=n_new, z_mm=z_new, R_mm=R_new, w_mm=w_new)
     
     def __repr__(self):
-        p1 = "{}(wl_um={:.5f}, n={:.6f}, z_mm={:.5f}, R_mm={:.5e}, w_mm={:.5f})".format(
+        p1 = "{}(wl_um={:.5f}, n={:.6f}, z_mm={:.5f}, R_mm={:.5e}, w_mm={:.5f}, label={})".format(
             self.__class__.__name__,
-            self.WL, self.n, self.z, self.R, self.w
+            self.WL, self.n, self.z, self.R, self.w, self.label
         )
         p2 = "  q : {c.real:.5e} {c.imag:+.5e}i".format(c=self.q)
         p3 = "  theta : {:.6e} mrad".format(self.theta*1e3)
@@ -366,7 +376,7 @@ class GaussBeam(object):
     
     def plot_w(self, ax, marker=".", size=3):
         """Plot of (z, w) points to a given figure axis.
-
+        
         Parameters
         ----------
         ax : matplotlib Axes object
@@ -374,10 +384,11 @@ class GaussBeam(object):
         """
         w_track = np.asarray(self.traj['w_mm'])
         z_track = np.asarray(self.traj['z_mm'])
-        ax.scatter(z_track, w_track * 1e3, s=size, marker=marker)
+        ax.scatter(z_track, w_track * 1e3, s=size, marker=marker, label=self.label)
         ax.set_xlabel("$z$ (mm)")
         ax.set_ylabel("$w$ (µm)")
         ax.set_ylim(0, np.max(w_track) * 1e3 * 1.05)
+        ax.legend()
     
     def plot_R(self, ax):
         """Plot of (z, R) points to a given figure axis.
@@ -423,19 +434,18 @@ class GaussBeam(object):
         ax.set_xlabel("$z$ (mm)")
         ax.set_ylabel(r"$\theta$ (mrad)")
     
-    def search_BeamWaists(self, return_w=False):
+    def search_BeamWaists(self, out=False):
         """Search for and report the beam waists.
-
-        Here beam waists are defined as the points where the sign of wavefront curvature flips.
-
-        if return_w is true, return `w_waist` array.
+        Beam waists are defined as the points where the sign of wavefront curvature flips.
+        If `out` is True, it returns a tuples of three arrays, `(n_waists, z_waists, w_waists)`.
+        If not, it just print the results.
         """
         idx_waists = arg_signchange(np.asarray(self.traj['R_mm']))
         n_waists = np.asarray(self.traj['n'])[idx_waists]
         z_waists = np.asarray(self.traj['z_mm'])[idx_waists]
         w_waists = np.asarray(self.traj['w_mm'])[idx_waists]
 
-        if not return_w:
+        if not out:
             print("\nBeam waists in z range [{:.3f}, {:.3f}] mm".format(self.traj['z_mm'][0], self.traj['z_mm'][-1]))
             print("--------------------------------------------------")
             for i in range(idx_waists[0].size):
@@ -446,5 +456,5 @@ class GaussBeam(object):
                 print("  Confocal parameter (2*Rayleigh range) : {:.2f} mm".format(2*pi * w_waists[i]**2 * n_waists[i] / (self.WL*1e-3)))
                 print("  2.84 * Confocal parameter : {:.2f} mm".format( 2.84 * 2*pi* (w_waists[i])**2 * n_waists[i] / (self.WL*1e-3) ))
         
-        if return_w:
-            return w_waists
+        if out:
+            return (n_waists, z_waists, w_waists)
