@@ -11,79 +11,127 @@ pip install gbeampro
 ## Quick Start
 
 ```python
-from gbeampro import beambase
+from gbeampro import GaussBeam, Propagation, ThinLens, Interface, OpticalSystem
 
-# Define a beam: 1064 nm, w=1 mm, flat wavefront
-beam = beambase.GaussBeam(wl_um=1.064, n=1.0, w_mm=1.0)
+# Define a beam at its waist: 1064 nm, w₀=1 mm
+beam = GaussBeam.from_waist(wl_um=1.064, w0_mm=1.0)
 
-# Propagate 100 mm, focus with f=50 mm lens, propagate into crystal (n=1.5)
-beam.propagate(50).thinlens(50).interface(1.5).propagate(10)
+# Build an optical system
+sys = (OpticalSystem()
+       .add(Propagation(100))
+       .add(ThinLens(f_mm=50))
+       .add(Interface(n1=1.0, n2=1.5))
+       .add(Propagation(30)))
 
-# Find beam waists
-beam.search_BeamWaists()
+# Print system layout and beam state at each element
+print(sys)
+print(sys.summary(beam))
+
+# Trace the full caustic
+traj = sys.trace(beam, dz=0.5)
 ```
 
 ## API Reference
 
-### `GaussBeam(wl_um, n, z_mm, R_mm, w_mm, label)`
+### `GaussBeam`
 
-Fundamental Gaussian beam object.
+Immutable Gaussian beam value object (`frozen dataclass`).
 
 | Parameter | Description | Unit |
 |-----------|-------------|------|
 | `wl_um` | Wavelength | µm |
-| `n` | Refractive index of medium | — |
+| `n` | Refractive index | — |
 | `z_mm` | z-coordinate of wavefront | mm |
-| `R_mm` | Wavefront curvature radius | mm |
+| `R_mm` | Wavefront curvature radius (`inf` at waist) | mm |
 | `w_mm` | Beam radius (1/e² intensity half-width) | mm |
-| `label` | Label string | — |
 
-Key attributes: `.q` (complex q-parameter), `.theta` (divergence half-angle in rad).
+Key properties: `.q` (complex q-parameter), `.theta` (divergence half-angle in rad).
 
-### Transformation Methods
+**Constructors**
 
-All methods mutate the beam in-place and return `self`, enabling method chaining.
+```python
+GaussBeam.from_waist(wl_um, w0_mm, z_mm=0.0, n=1.0)  # from beam waist
+GaussBeam.from_q(wl_um, n, q, z_mm=0.0)               # from complex q-parameter
+```
 
-| Method | Description |
-|--------|-------------|
-| `propagate(d_total, dz=0.01)` | Free-space propagation over distance `d_total` (mm), recorded at steps of `dz` |
-| `thinlens(f)` | Thin lens with effective focal length `f` (mm) |
-| `interface(n2)` | Refraction at a flat dielectric interface into medium with index `n2` |
-| `interface_curved(n2, r)` | Refraction at a curved dielectric interface; `r > 0` convex, `r < 0` concave (mm) |
-| `curved_mirror_tan(r, theta_deg)` | Reflection from a curved mirror, tangential (in-plane) component |
-| `curved_mirror_sag(r, theta_deg)` | Reflection from a curved mirror, sagittal (out-of-plane) component |
+### Optical Elements
 
-### Analysis Methods
+Each element implements `apply(beam) -> GaussBeam` based on its ABCD matrix.
 
-| Method | Description |
-|--------|-------------|
-| `search_BeamWaists(out=False)` | Locate beam waists (sign change of R). Prints results; returns `(n, z, w)` arrays if `out=True` |
+| Class | Parameters | Description |
+|-------|-----------|-------------|
+| `Propagation(d_mm)` | `d` — distance (mm) | Free-space propagation |
+| `ThinLens(f_mm)` | `f` — focal length (mm) | Thin lens |
+| `Interface(n1, n2)` | `n1`, `n2` — refractive indices | Flat dielectric interface |
+| `InterfaceCurved(n1, n2, r_mm)` | `r > 0` convex, `r < 0` concave (mm) | Curved dielectric interface |
+| `CurvedMirrorTan(r_mm, theta_deg)` | `r` — radius (mm), `θ` — angle of incidence (deg) | Curved mirror, tangential |
+| `CurvedMirrorSag(r_mm, theta_deg)` | `r` — radius (mm), `θ` — angle of incidence (deg) | Curved mirror, sagittal |
 
-### Plot Methods
+Custom elements can be added by subclassing `Element` and implementing the `matrix` property.
 
-| Method | Description |
-|--------|-------------|
-| `plot_w(ax)` | Beam radius w vs z |
-| `plot_R(ax)` | Wavefront curvature radius R vs z |
-| `plot_n(ax)` | Refractive index n vs z |
-| `plot_theta(ax)` | Divergence half-angle θ vs z |
+### `OpticalSystem`
 
-## Trajectory
+```python
+sys = OpticalSystem().add(element1).add(element2)  # fluent API
 
-Every transformation appends to `beam.traj`, a dict of lists:
+sys.trace(beam, dz=0.01)   # -> list[GaussBeam], full caustic trajectory
+str(sys)                   # element layout table
+sys.summary(beam)          # beam state at each element + waist report
+```
 
-| Key | Description |
-|-----|-------------|
-| `z_mm` | z-coordinate (mm) |
-| `n` | Refractive index |
-| `R_mm` | Wavefront curvature radius (mm) |
-| `w_mm` | Beam radius (mm) |
-| `q` | Complex q-parameter |
-| `theta_rad` | Divergence half-angle (rad) |
+### Analysis (`gbeampro.analysis`)
+
+```python
+from gbeampro.analysis import find_waists, rayleigh_range, confocal_parameter
+
+find_waists(trajectory)      # -> list[GaussBeam] at waist locations
+rayleigh_range(beam)         # -> float, z_R (mm)
+confocal_parameter(beam)     # -> float, 2*z_R (mm)
+```
+
+### Plot (`gbeampro.plot`)
+
+```python
+import gbeampro.plot as gplot
+
+gplot.plot_caustic(trajectory, ax)              # w vs z
+gplot.plot_system(sys, trajectory, ax,
+                  label="beam", beam_kw={})     # caustic + element symbols
+```
+
+Multiple beams can be overlaid by calling `plot_system` on the same `ax`; each label gets a distinct color from the matplotlib color cycle.
+
+## Display Example
+
+```
+OpticalSystem
+=========================================================
+   #  Type                Parameters                z (mm)
+---------------------------------------------------------
+   0  --- input ---                                  0.000
+   1  Propagation         d =  100.000 mm          100.000
+   2  ThinLens            f =   50.000 mm          100.000
+   3  Propagation         d =  100.000 mm          200.000
+=========================================================
+Total length: 200.000 mm  |  3 elements
+
+OpticalSystem trace  [wl=1.064 um]
+========================================================================
+   #  Type                   z (mm)     w (um)      R (mm)   th (urad)
+------------------------------------------------------------------------
+   0  --- input ---           0.000    1000.00         inf      338.68
+   1  Propagation           100.000    1000.57   8.728e+04      338.49
+   2  ThinLens              100.000    1000.57  -5.003e+01      338.49
+   3  Propagation           200.000    1000.00   5.000e+01      338.68
+========================================================================
+Beam waists:  z=150.500 mm (2w0=39.0 um)
+```
 
 ## Examples
 
-- [Beam focusing into a slab of crystal](gbeampro/examples/beam_focusing_into_crystal.ipynb)
+- [All elements test](gbeampro/examples/test_all_elements.ipynb)
+- [plot_system test](gbeampro/examples/test_plot_system.ipynb)
+- [Beam focusing into a crystal (v1 API)](gbeampro/examples/beam_focusing_into_crystal.ipynb)
 
 ## License
 
