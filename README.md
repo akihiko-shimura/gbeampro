@@ -2,6 +2,8 @@
 
 *gbeampro* is a small Python package for simulating Gaussian (TEM₀₀) laser beam propagation and transformations using the ABCD matrix method (q-parameter formalism).
 
+![demo](assets/demo.png)
+
 ## Installation
 
 ```bash
