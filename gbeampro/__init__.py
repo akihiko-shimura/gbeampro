@@ -1,7 +1,14 @@
-"""
-init file of gbeampro package
-"""
-__version__ = "1.0.1"
+__version__ = "2.0.0"
 
-from . import beambase, helper
-
+from .beam import GaussBeam
+from .elements import (
+    Element,
+    Propagation,
+    ThinLens,
+    Interface,
+    InterfaceCurved,
+    CurvedMirrorTan,
+    CurvedMirrorSag,
+)
+from .system import OpticalSystem
+from . import analysis, plot
