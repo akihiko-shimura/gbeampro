@@ -1,9 +1,14 @@
 # Project Instructions
 
+## プロジェクト概要
+
+ABCD 行列法（q パラメータ形式）を用いたガウシアンレーザービーム伝播シミュレーション・最適化ライブラリ。
+Zemax OpticStudio の Merit Function を参考にした非点収差ビーム整形最適化機能を含む。
+
 ## プロジェクト構造
 
 ```
-gbeampro/       # package source code
+gbeampro/       # package source codes
 examples/       # Jupyter notebooks of usage examples
 docs/           # API reference markdown
 .claude/skills/ # project skills
