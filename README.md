@@ -1,13 +1,14 @@
 # gbeampro
 
-*gbeampro* is a small Python package for simulating Gaussian (TEM₀₀) laser beam propagation and transformations using the ABCD matrix method (q-parameter formalism).
+*gbeampro* is a Python package for simulating Gaussian (TEM₀₀) laser beam propagation and transformations using the ABCD matrix method (q-parameter formalism).
 
 ![demo](assets/demo.png)
 
 ## Installation
 
 ```bash
-pip install gbeampro
+pip install gbeampro           # core
+pip install gbeampro[optimize] # + scipy for optimization
 ```
 
 ## Quick Start
@@ -76,7 +77,7 @@ Custom elements can be added by subclassing `Element` and implementing the `matr
 ```python
 sys = OpticalSystem().add(element1).add(element2)  # fluent API
 
-sys.trace(beam, dz=0.01)   # -> list[GaussBeam], full caustic trajectory
+sys.trace(beam, dz=0.5)    # -> list[GaussBeam], full caustic trajectory
 str(sys)                   # element layout table
 sys.summary(beam)          # beam state at each element + waist report
 ```
@@ -96,44 +97,90 @@ confocal_parameter(beam)     # -> float, 2*z_R (mm)
 ```python
 import gbeampro.plot as gplot
 
-gplot.plot_caustic(trajectory, ax)              # w vs z
-gplot.plot_system(sys, trajectory, ax,
-                  label="beam", beam_kw={})     # caustic + element symbols
+gplot.plot_system(sys, trajectory, ax, label="beam")
 ```
 
 Multiple beams can be overlaid by calling `plot_system` on the same `ax`; each label gets a distinct color from the matplotlib color cycle.
 
-## Display Example
+### Optimization (`gbeampro.optimize`)
 
+Requires `pip install gbeampro[optimize]`.
+
+Lens system optimization inspired by Zemax OpticStudio's merit function approach.
+The merit function is defined as a list of **operands** — each specifying a beam
+property, an evaluation position, a target value, and a weight.
+
+**Operand types**
+
+| Type | Quantity | Unit |
+|------|----------|------|
+| `wx` / `wy` | Beam radius at `z_mm` for x / y axis | mm |
+| `cvx` / `cvy` | Wavefront curvature 1/R at `z_mm`; target=0 → waist | mm⁻¹ |
+| `thx` / `thy` | Half-divergence angle at `z_mm` | mrad |
+
+**Algorithms**
+
+| `algorithm=` | Description |
+|---|---|
+| `'de'` | Differential evolution — global, robust |
+| `'lm'` | Levenberg-Marquardt / TRF — local, fast |
+| `'hammer'` | DE global search → TRF polish (like Zemax Hammer) |
+
+**Example: focus to a beam waist**
+
+```python
+from gbeampro import GaussBeam
+from gbeampro.optimize import waist_operands, optimize_astigmatic, build_xy_systems
+
+beam = GaussBeam.from_waist(wl_um=1.064, w0_mm=2.0)
+
+# Define merit function: waist wx=0.1mm, wy=0.1mm at z=200mm
+operands = waist_operands(
+    z_mm=200, wx_mm=0.1, wy_mm=0.1,
+    size_weight=1.0,
+    waist_tol_x_mm=10.0,   # acceptable waist displacement
+    waist_tol_y_mm=10.0,
+)
+
+result = optimize_astigmatic(
+    beam,
+    lens_types=['spherical', 'spherical'],
+    operands=operands,
+    f_bounds=(-1000, 1000),
+    min_lens_sep_mm=20.0,
+    algorithm='de',
+)
+print(result.specs)   # [{'type': 'spherical', 'z_mm': ..., 'f_mm': ...}, ...]
+print(result.merit)
 ```
-OpticalSystem
-=========================================================
-   #  Type                Parameters                z (mm)
----------------------------------------------------------
-   0  --- input ---                                  0.000
-   1  Propagation         d =  100.000 mm          100.000
-   2  ThinLens            f =   50.000 mm          100.000
-   3  Propagation         d =  100.000 mm          200.000
-=========================================================
-Total length: 200.000 mm  |  3 elements
 
-OpticalSystem trace  [wl=1.064 um]
-========================================================================
-   #  Type                   z (mm)     w (um)      R (mm)   th (urad)
-------------------------------------------------------------------------
-   0  --- input ---           0.000    1000.00         inf      338.68
-   1  Propagation           100.000    1000.57   8.728e+04      338.49
-   2  ThinLens              100.000    1000.57  -5.003e+01      338.49
-   3  Propagation           200.000    1000.00   5.000e+01      338.68
-========================================================================
-Beam waists:  z=150.500 mm (2w0=39.0 um)
+**Find minimum lens count automatically**
+
+```python
+from gbeampro.optimize import find_minimum_system
+
+result, n = find_minimum_system(
+    beam, operands,
+    lens_type='spherical',
+    max_lenses=5,
+    merit_threshold=1e-3,
+    f_abs_bounds=(30, 1000),   # |f| ∈ [30, 1000] mm
+    f_step_mm=5.0,             # discrete 5 mm steps
+    z_max_mm=140.0,            # lenses must be placed before z=140 mm
+    min_lens_sep_mm=20.0,
+    algorithm='de',
+    verbose=True,
+)
+print(f'Minimum: {n} lens(es)')
 ```
 
 ## Examples
 
 - [All elements test](gbeampro/examples/test_all_elements.ipynb)
 - [plot_system test](gbeampro/examples/test_plot_system.ipynb)
-- [Beam focusing into a crystal (v1 API)](gbeampro/examples/beam_focusing_into_crystal.ipynb)
+- [Beam focusing into a crystal](gbeampro/examples/beam_focusing_into_crystal.ipynb)
+- [Minimum lens system search](gbeampro/examples/minimum_lens_system.ipynb)
+- [Astigmatic beam shaping](gbeampro/examples/astigmatic_beam_shaping.ipynb)
 
 ## License
 
