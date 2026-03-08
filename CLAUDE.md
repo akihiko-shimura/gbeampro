@@ -3,10 +3,10 @@
 ## プロジェクト構造
 
 ```
-gbeampro/       # パッケージ本体
-examples/       # Jupyter notebooks（プロジェクトルートに配置）
+gbeampro/       # package source code
+examples/       # Jupyter notebooks of usage examples
 docs/           # API reference markdown
-.claude/skills/ # プロジェクト固有のスキル
+.claude/skills/ # project skills
 ```
 
 ## 開発環境
@@ -23,16 +23,6 @@ docs/           # API reference markdown
 
 - `README.md` → 英語
 - `docs/*.md` → 日本語
-
-## リリース手順
-
-1. `gbeampro/__init__.py` の `__version__` を更新
-2. `git commit` → `git push`
-3. `rm -rf dist && .venv/bin/python -m build`
-4. `.venv/bin/python -m twine upload dist/*`
-5. `gh release create vX.Y.Z dist/*`
-
-→ `/pypi-release` スキルで自動化可能
 
 ## 利用可能なスキル
 
