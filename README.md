@@ -178,11 +178,11 @@ print(f'Minimum: {n} lens(es)')
 
 ## Examples
 
-- [All elements test](gbeampro/examples/test_all_elements.ipynb)
-- [plot_system test](gbeampro/examples/test_plot_system.ipynb)
-- [Beam focusing into a crystal](gbeampro/examples/beam_focusing_into_crystal.ipynb)
-- [Minimum lens system search](gbeampro/examples/minimum_lens_system.ipynb)
-- [Astigmatic beam shaping](gbeampro/examples/astigmatic_beam_shaping.ipynb)
+- [All elements test](examples/test_all_elements.ipynb)
+- [plot_system test](examples/test_plot_system.ipynb)
+- [Beam focusing into a crystal](examples/beam_focusing_into_crystal.ipynb)
+- [Minimum lens system search](examples/minimum_lens_system.ipynb)
+- [Astigmatic beam shaping](examples/astigmatic_beam_shaping.ipynb)
 
 ## License
 
