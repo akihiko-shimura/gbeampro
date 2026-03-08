@@ -36,6 +36,8 @@ traj = sys.trace(beam, dz=0.5)
 
 ## API Reference
 
+> Full API reference (Japanese): [beam](docs/beam_api.md) · [elements](docs/elements_api.md) · [system](docs/system_api.md) · [analysis / plot](docs/analysis_plot_api.md) · [optimize](docs/optimize_api.md)
+
 ### `GaussBeam`
 
 Immutable Gaussian beam value object (`frozen dataclass`).
