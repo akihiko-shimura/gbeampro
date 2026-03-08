@@ -31,5 +31,8 @@ dependencies = [
     "numpy"
 ]
 
+[project.optional-dependencies]
+optimize = ["scipy"]
+
 [project.urls]
 Homepage = "https://github.com/akihiko-shimura/gbeampro"

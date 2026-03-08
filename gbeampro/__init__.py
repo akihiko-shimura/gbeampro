@@ -11,4 +11,4 @@ from .elements import (
     CurvedMirrorSag,
 )
 from .system import OpticalSystem
-from . import analysis, plot
+from . import analysis, plot, optimize
