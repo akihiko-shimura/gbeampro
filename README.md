@@ -106,6 +106,8 @@ Multiple beams can be overlaid by calling `plot_system` on the same `ax`; each l
 
 Requires `pip install gbeampro[optimize]`.
 
+> Full API reference: [docs/optimize_api.md](docs/optimize_api.md)
+
 Lens system optimization inspired by Zemax OpticStudio's merit function approach.
 The merit function is defined as a list of **operands** — each specifying a beam
 property, an evaluation position, a target value, and a weight.
