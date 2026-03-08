@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import functools
+import time
 import numpy as np
 
 from .beam import GaussBeam
@@ -43,6 +45,7 @@ class OptResult:
     merit: float
     operand_values: list[float]
     success: bool
+    elapsed_s: float = 0.0
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
@@ -109,8 +112,23 @@ def _residual_scale(op: Operand) -> float:
     return 1.0
 
 
+# ── Timing decorator ──────────────────────────────────────────────────────────
+
+def _timed(fn):
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        t0 = time.perf_counter()
+        result = fn(*args, **kwargs)
+        elapsed = time.perf_counter() - t0
+        result.elapsed_s = elapsed
+        print(f'[{fn.__name__}] elapsed: {elapsed:.2f} s')
+        return result
+    return wrapper
+
+
 # ── Main optimizer ────────────────────────────────────────────────────────────
 
+@_timed
 def optimize_astigmatic(
     beam: GaussBeam,
     lens_types: list[str],
