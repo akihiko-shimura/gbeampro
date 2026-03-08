@@ -116,8 +116,10 @@ def optimize_astigmatic(
     lens_types: list[str],
     operands: list[Operand],
     z_bounds: tuple[float, float] | None = None,
+    z_max_mm: float | None = None,
     f_bounds: tuple[float, float] | None = None,
     f_abs_bounds: tuple[float, float] | None = None,
+    f_step_mm: float = 0.0,
     min_lens_sep_mm: float = 0.0,
     algorithm: str = 'de',
     seed: int = 42,
@@ -139,11 +141,16 @@ def optimize_astigmatic(
         Search range for lens z positions (mm). Default: (beam.z_mm, max operand z).
     f_bounds : (float, float), optional
         Search range for focal lengths (mm). Default: (1.0, 10000.0).
+    z_max_mm : float, optional
+        Upper bound on lens z positions (mm). Tightens z_bounds if given.
     f_abs_bounds : (float, float), optional
         Constraint on |f| (mm). If given, lenses with |f| outside this range are
         penalized. f_bounds is automatically set to (-f_abs_bounds[1], f_abs_bounds[1])
         unless explicitly provided. Example: f_abs_bounds=(30, 1000) allows
         f ∈ [-1000, -30] ∪ [30, 1000].
+    f_step_mm : float
+        Discrete step size for focal lengths (mm). If > 0, f values are rounded
+        to the nearest multiple of f_step_mm during evaluation. Default: 0 (continuous).
     min_lens_sep_mm : float
         Minimum separation between adjacent lenses (mm).
     algorithm : str
@@ -166,6 +173,8 @@ def optimize_astigmatic(
     z_lo, z_hi = z_bounds if z_bounds is not None else (
         beam.z_mm, max(op.z_mm for op in operands)
     )
+    if z_max_mm is not None:
+        z_hi = min(z_hi, z_max_mm)
     if f_abs_bounds is not None:
         f_abs_lo, f_abs_hi = f_abs_bounds
         f_lo, f_hi = f_bounds if f_bounds is not None else (-f_abs_hi, f_abs_hi)
@@ -176,9 +185,18 @@ def optimize_astigmatic(
     bounds_lo = np.array([b[0] for b in bounds_list])
     bounds_hi = np.array([b[1] for b in bounds_list])
 
+    def _snap_f(f: float) -> float:
+        if f_step_mm <= 0:
+            return f
+        snapped = round(f / f_step_mm) * f_step_mm
+        # avoid f=0 after snapping
+        if snapped == 0.0:
+            snapped = f_step_mm if f >= 0 else -f_step_mm
+        return snapped
+
     def _build_specs(params: np.ndarray) -> list[LensSpec]:
         zs = np.sort(params[0::2])
-        fs = params[1::2]
+        fs = [_snap_f(f) for f in params[1::2]]
         return [{"type": t, "z_mm": float(z), "f_mm": float(f)}
                 for t, z, f in zip(lens_types, zs, fs)]
 
@@ -191,7 +209,7 @@ def optimize_astigmatic(
     def _fabs_ok(params: np.ndarray) -> bool:
         if f_abs_lo <= 0:
             return True
-        fs = params[1::2]
+        fs = [_snap_f(f) for f in params[1::2]]
         return bool(np.all(np.abs(fs) >= f_abs_lo))
 
     def _residuals(params: np.ndarray) -> np.ndarray:
@@ -350,8 +368,10 @@ def find_minimum_system(
     max_lenses: int = 5,
     merit_threshold: float = 1e-3,
     z_bounds: tuple[float, float] | None = None,
+    z_max_mm: float | None = None,
     f_bounds: tuple[float, float] | None = None,
     f_abs_bounds: tuple[float, float] | None = None,
+    f_step_mm: float = 0.0,
     min_lens_sep_mm: float = 0.0,
     algorithm: str = 'de',
     seed: int = 42,
@@ -395,8 +415,9 @@ def find_minimum_system(
 
         result = optimize_astigmatic(
             beam, types, operands,
-            z_bounds=z_bounds, f_bounds=f_bounds,
-            f_abs_bounds=f_abs_bounds,
+            z_bounds=z_bounds, z_max_mm=z_max_mm,
+            f_bounds=f_bounds, f_abs_bounds=f_abs_bounds,
+            f_step_mm=f_step_mm,
             min_lens_sep_mm=min_lens_sep_mm,
             algorithm=algorithm, seed=seed,
             maxiter=maxiter, popsize=popsize, tol=tol,
