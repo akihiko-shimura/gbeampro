@@ -128,52 +128,61 @@ property, an evaluation position, a target value, and a weight.
 | `'lm'` | Levenberg-Marquardt / TRF — local, fast |
 | `'hammer'` | DE global search → TRF polish (like Zemax Hammer) |
 
-**Example: focus to a beam waist**
+**Example 1: astigmatic beam shaping**
+
+Three-lens configuration (spherical + cyl_x + cyl_y) focusing a circular beam to an astigmatic waist.
+`f_abs_bounds` restricts focal lengths to catalog range; `f_step_mm` enforces discrete steps.
 
 ```python
 from gbeampro import GaussBeam
 from gbeampro.optimize import waist_operands, optimize_astigmatic, build_xy_systems
 
-beam = GaussBeam.from_waist(wl_um=1.064, w0_mm=2.0)
+# input beam: 800 nm wavelength, 1.0 mm waist radius
+beam = GaussBeam.from_waist(wl_um=0.8, w0_mm=1.0)
 
-# Define merit function: waist wx=0.1mm, wy=0.1mm at z=200mm
+# merit function: target wx=120 µm, wy=400 µm at z=500 mm with waist condition (cvx=cvy=0)
 operands = waist_operands(
-    z_mm=200, wx_mm=0.1, wy_mm=0.1,
+    z_mm=500, wx_mm=0.12, wy_mm=0.40,
     size_weight=1.0,
-    waist_tol_x_mm=10.0,   # acceptable waist displacement
-    waist_tol_y_mm=10.0,
+    curvature_weight_x=1.0,   # weight for x-axis waist condition
+    curvature_weight_y=1.0,   # weight for y-axis waist condition
 )
 
 result = optimize_astigmatic(
     beam,
-    lens_types=['spherical', 'spherical'],
+    lens_types=['spherical', 'cyl_x', 'cyl_y'],  # spherical + two cylindrical lenses
     operands=operands,
-    f_bounds=(-1000, 1000),
-    min_lens_sep_mm=20.0,
-    algorithm='de',
+    f_abs_bounds=(30, 1000),   # restrict |f| to [30, 1000] mm (catalog range)
+    f_step_mm=5.0,             # round focal lengths to 5 mm steps
+    z_max_mm=480.0,            # place all lenses before z=480 mm
+    min_lens_sep_mm=20.0,      # minimum separation between adjacent lenses
+    algorithm='de',            # differential evolution — global search
+    maxiter=2000, popsize=20, seed=42,
 )
-print(result.specs)   # [{'type': 'spherical', 'z_mm': ..., 'f_mm': ...}, ...]
-print(result.merit)
+
+print(result.specs)    # [{'type': ..., 'z_mm': ..., 'f_mm': ...}, ...]
+print(f'merit={result.merit:.2e}  elapsed={result.elapsed_s:.1f}s')
 ```
 
-**Find minimum lens count automatically**
+**Example 2: find minimum lens count automatically**
+
+Tries n=1, 2, ... lenses in sequence and stops as soon as `merit < merit_threshold`.
 
 ```python
 from gbeampro.optimize import find_minimum_system
 
 result, n = find_minimum_system(
     beam, operands,
-    lens_type='spherical',
-    max_lenses=5,
-    merit_threshold=1e-3,
-    f_abs_bounds=(30, 1000),   # |f| ∈ [30, 1000] mm
-    f_step_mm=5.0,             # discrete 5 mm steps
-    z_max_mm=140.0,            # lenses must be placed before z=140 mm
-    min_lens_sep_mm=20.0,
+    lens_type='spherical',     # repeat this lens type n times
+    max_lenses=5,              # upper limit on lens count to try
+    merit_threshold=1e-3,      # stop when merit falls below this value
+    f_abs_bounds=(30, 1000),   # restrict |f| to [30, 1000] mm
+    f_step_mm=5.0,             # round focal lengths to 5 mm steps
+    z_max_mm=140.0,            # place all lenses before z=140 mm
+    min_lens_sep_mm=20.0,      # minimum separation between adjacent lenses
     algorithm='de',
-    verbose=True,
 )
-print(f'Minimum: {n} lens(es)')
+print(f'Minimum: {n} lens(es),  merit={result.merit:.2e}')
 ```
 
 ## Examples

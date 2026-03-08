@@ -259,64 +259,74 @@ find_lens_system(
 
 ### ウェストへの収束
 
+球面レンズ1枚＋シリンドリカルレンズ2枚で，円形ビームを楕円ウェストに収束させる例。
+
 ```python
 from gbeampro import GaussBeam
 from gbeampro.optimize import waist_operands, optimize_astigmatic, build_xy_systems
 
+# 入力ビーム: λ=800 nm, ウェスト半径 w₀=1.0 mm
 beam = GaussBeam.from_waist(wl_um=0.8, w0_mm=1.0)
 
+# メリット関数: z=500 mm で wx=120 µm, wy=400 µm のウェストを目標
+# curvature_weight はウェスト条件 (cvx=cvy=0) の重み
 operands = waist_operands(
     z_mm=500, wx_mm=0.12, wy_mm=0.40,
     size_weight=1.0,
-    curvature_weight_x=1.0,
-    curvature_weight_y=1.0,
+    curvature_weight_x=1.0,   # x 軸ウェスト条件の重み
+    curvature_weight_y=1.0,   # y 軸ウェスト条件の重み
 )
 
 result = optimize_astigmatic(
     beam,
-    lens_types=['spherical', 'cyl_x', 'cyl_y'],
+    lens_types=['spherical', 'cyl_x', 'cyl_y'],  # 球面 + シリンドリカル x + シリンドリカル y
     operands=operands,
-    f_abs_bounds=(30, 1000),
-    f_step_mm=5.0,
-    z_max_mm=480.0,
-    min_lens_sep_mm=20.0,
-    algorithm='de',
+    f_abs_bounds=(30, 1000),   # |f| を [30, 1000] mm に制限（市販カタログ相当）
+    f_step_mm=5.0,             # 焦点距離を 5 mm 刻みに離散化
+    z_max_mm=480.0,            # レンズ配置の上限位置（ターゲット手前 20 mm）
+    min_lens_sep_mm=20.0,      # 隣接レンズ間の最小間隔
+    algorithm='de',            # Differential Evolution によるグローバル探索
     maxiter=2000, popsize=20, seed=42,
 )
 
-print(result.specs)
+print(result.specs)    # [{'type': ..., 'z_mm': ..., 'f_mm': ...}, ...]
 print(f'merit={result.merit:.2e}  elapsed={result.elapsed_s:.1f}s')
 ```
 
 ### 最小レンズ枚数の探索
+
+`n=1, 2, ...` と枚数を増やしながら最適化を繰り返し，merit が閾値を下回った時点で停止する。
 
 ```python
 from gbeampro.optimize import find_minimum_system
 
 result, n = find_minimum_system(
     beam, operands,
-    lens_type='spherical',
-    max_lenses=5,
-    merit_threshold=1e-3,
-    f_abs_bounds=(30, 1000),
-    f_step_mm=5.0,
-    z_max_mm=140.0,
-    min_lens_sep_mm=20.0,
+    lens_type='spherical',     # 同種レンズを n 枚使用
+    max_lenses=5,              # 最大試行枚数
+    merit_threshold=1e-3,      # この値を下回れば合格
+    f_abs_bounds=(30, 1000),   # |f| を [30, 1000] mm に制限
+    f_step_mm=5.0,             # 焦点距離を 5 mm 刻みに離散化
+    z_max_mm=140.0,            # レンズ配置の上限位置
+    min_lens_sep_mm=20.0,      # 隣接レンズ間の最小間隔
     algorithm='de',
 )
-print(f'minimum: {n} lens(es),  merit={result.merit:.2e}')
+print(f'最小枚数: {n} 枚,  merit={result.merit:.2e}')
 ```
 
 ### 結果の可視化
+
+x/y 各軸の caustic を同一グラフに重ね描きする。
 
 ```python
 import gbeampro.plot as gplot
 import matplotlib.pyplot as plt
 
+# result.specs から x/y 軸の光学系を構築
 sx, sy = build_xy_systems(beam, result.specs, 600)
 fig, ax = plt.subplots(figsize=(12, 4))
 gplot.plot_system(sx, sx.trace(beam, dz=1.0), ax, label='x')
 gplot.plot_system(sy, sy.trace(beam, dz=1.0), ax, label='y')
-ax.axvline(500, color='k', ls=':')
+ax.axvline(500, color='k', ls=':')  # ターゲット位置を点線で表示
 plt.tight_layout()
 ```
