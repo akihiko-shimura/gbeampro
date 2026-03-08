@@ -1,5 +1,24 @@
 # `gbeampro.optimize` API Reference
 
+## Table of Contents
+
+- [Overview](#overview)
+- [データクラス](#データクラス)
+  - [`Operand`](#operand)
+  - [`OptResult`](#optresult)
+- [関数](#関数)
+  - [`optimize_astigmatic`](#optimize_astigmatic)
+  - [`waist_operands`](#waist_operands)
+  - [`find_minimum_system`](#find_minimum_system)
+  - [`build_xy_systems`](#build_xy_systems)
+  - [`find_lens_system`](#find_lens_system)
+- [使用例](#使用例)
+  - [ウェストへの収束](#ウェストへの収束)
+  - [最小レンズ枚数の探索](#最小レンズ枚数の探索)
+  - [結果の可視化](#結果の可視化)
+
+---
+
 ## Overview
 
 Zemax OpticStudio の Merit Function / Optimization を参考にした，非点収差ガウシアンビーム系の最適化モジュール。
