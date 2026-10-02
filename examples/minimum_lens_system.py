@@ -25,6 +25,8 @@ def _(mo):
     | Target position z | 200 mm |
     | Target waist w | 0.1 mm |
     | Waist tolerance Δz | ±10 mm |
+    | Aperture position z | 250 mm |
+    | Aperture radius r | 0.3 mm |
 
     **Strategy**: Start with minimal constraints to find the theoretical minimum,
     then progressively tighten towards a realistic, manufacturable lens system.
@@ -77,6 +79,8 @@ def _(GaussBeam, np, waist_operands):
     Z_TARGET  = 200.0   # mm
     W_TARGET  = 0.1     # mm
     WAIST_TOL = 10.0    # mm
+    Z_APERTURE = 250.0  # mm
+    R_APERTURE = 0.3    # mm
 
     beam = GaussBeam.from_waist(wl_um=WL, w0_mm=W0)
     print(beam)
@@ -95,7 +99,7 @@ def _(GaussBeam, np, waist_operands):
     print(f'\nMerit function operands:')
     for op in operands:
         print(f'  {op.type:<4}  target={op.target:.4g}  weight={op.weight:.3g}')
-    return W_TARGET, Z_TARGET, beam, operands
+    return R_APERTURE, W_TARGET, Z_APERTURE, Z_TARGET, beam, operands
 
 
 @app.cell(hide_code=True)
@@ -107,7 +111,17 @@ def _(mo):
 
 
 @app.cell
-def _(W_TARGET, Z_TARGET, beam, build_xy_systems, ga, gplot, plt):
+def _(
+    R_APERTURE,
+    W_TARGET,
+    Z_APERTURE,
+    Z_TARGET,
+    beam,
+    build_xy_systems,
+    ga,
+    gplot,
+    plt,
+):
     def print_specs(result):
         print(f"{'#':>2}  {'z (mm)':>10}  {'f (mm)':>10}  {'|f| (mm)':>10}")
         print('   ' + '-' * 36)
@@ -119,16 +133,26 @@ def _(W_TARGET, Z_TARGET, beam, build_xy_systems, ga, gplot, plt):
                     for i in range(len(result.specs)-1)]
             print(f'  separations: {[f"{d:.1f} mm" for d in seps]}')
 
-    def plot_result(result, n, title, z_end=Z_TARGET+50):
-        sx, _ = build_xy_systems(beam, result.specs, z_end)
+    def plot_result(result, n, title, z_end=max(Z_TARGET+50, Z_APERTURE+20)):
+        sx, sy = build_xy_systems(beam, result.specs, z_end)
         traj = sx.trace(beam, dz=0.5)
         waists = ga.find_waists(traj)
+        b_ap = ga.beam_at(traj, Z_APERTURE)
+        loss = ga.aperture_loss(b_ap, R_APERTURE, beam_y=ga.beam_at(sy.trace(beam, dz=0.5), Z_APERTURE))
         fig, ax = plt.subplots(figsize=(11, 3.5))
         gplot.plot_system(sx, traj, ax, label='beam')
         ax.axvline(Z_TARGET, color='k', ls=':', lw=1.2, label=f'z={Z_TARGET:.0f} mm')
-        ax.scatter([Z_TARGET], [W_TARGET*1e3], color='r', zorder=6, s=80, label='target')
+        ax.plot(Z_TARGET, W_TARGET*1e3, 'o', color='r', ms=1.5*ax.lines[0].get_linewidth(), zorder=6, label='target')
+        y_lo, y_hi = ax.get_ylim()
+        r_um = R_APERTURE * 1e3
+        ax.vlines([Z_APERTURE]*2, [r_um, y_lo], [y_hi, -r_um], color='k', lw=3, zorder=7)
+        ax.text(Z_APERTURE, y_hi, f'aperture r={R_APERTURE} mm \nloss={loss*100:.2f}% ',
+                ha='right', va='top', fontsize=8)
+        ax.set_ylim(y_lo, y_hi)
         ax.set_title(title)
         plt.tight_layout()
+        print(f'Aperture at z={Z_APERTURE:.0f} mm (r={R_APERTURE} mm):  '
+              f'w={b_ap.w_mm*1e3:.2f} µm,  loss={loss*100:.4f}%')
         print('Waists found:')
         for w in waists:
             dz = w.z_mm - Z_TARGET
@@ -297,41 +321,9 @@ def _(
         traj = sx.trace(beam, dz=0.5)
         gplot.plot_system(sx, traj, ax, label='beam')
         ax.axvline(Z_TARGET, color='k', ls=':', lw=1.2)
-        ax.scatter([Z_TARGET], [W_TARGET * 1000.0], color='r', zorder=6, s=60, label='target')
+        ax.plot(Z_TARGET, W_TARGET*1e3, 'o', color='r', ms=1.5*ax.lines[0].get_linewidth(), zorder=6, label='target')
         ax.set_title(f'{label}  →  {_n} lens(es),  merit={_res.merit:.1e}')
     plt.tight_layout()
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Aperture Clipping Loss
-
-    A circular aperture of radius **r = 0.3 mm** is placed at **z = 250 mm**.
-    The fraction of beam power blocked by the aperture is
-
-    $$L = \exp\left(-\frac{2r^2}{w^2}\right)$$
-
-    where w is the beam radius (1/e²) at the aperture.
-    """)
-    return
-
-
-@app.cell
-def _(beam, build_xy_systems, ga, n1, n2, n3, r1, r2, r3):
-    Z_APERTURE = 250.0  # mm
-    R_APERTURE = 0.3    # mm
-
-    print(f'Aperture: r = {R_APERTURE} mm at z = {Z_APERTURE:.0f} mm\n')
-    print(f"{'Step':<6}  {'N':>3}  {'w (µm)':>9}  {'loss (%)':>10}")
-    print('-' * 34)
-    for step, _n, _res in [('1', n1, r1), ('2', n2, r2), ('3', n3, r3)]:
-        _sx, _sy = build_xy_systems(beam, _res.specs, Z_APERTURE)
-        _bx = ga.beam_at(_sx.trace(beam, dz=0.5), Z_APERTURE)
-        _by = ga.beam_at(_sy.trace(beam, dz=0.5), Z_APERTURE)
-        _loss = ga.aperture_loss(_bx, R_APERTURE, beam_y=_by)
-        print(f'{step:<6}  {_n:>3}  {_bx.w_mm*1e3:>9.2f}  {_loss*100:>10.4f}')
     return
 
 
