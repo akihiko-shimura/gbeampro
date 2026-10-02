@@ -46,10 +46,8 @@ def aperture_loss(beam: GaussBeam, r_mm: float, beam_y: GaussBeam | None = None)
     """
     wx = beam.w_mm
     wy = wx if beam_y is None else beam_y.w_mm
-    if np.isclose(wx, wy):
-        return float(np.exp(-2.0 * r_mm**2 / wx**2))
-    # 極座標で動径方向を解析積分し，角度方向は周期関数の台形則で数値積分する
+    # 極座標で動径方向を解析積分し，角度方向は周期関数の台形則で数値積分する。
+    # ⟨1/a⟩_φ = wx·wy を使い，1 − 透過率 の桁落ちを避けて損失を直接求める
     phi = np.linspace(0.0, 2.0 * np.pi, 4096, endpoint=False)
     a = np.cos(phi)**2 / wx**2 + np.sin(phi)**2 / wy**2
-    T = np.mean(-np.expm1(-2.0 * r_mm**2 * a) / a) / (wx * wy)
-    return float(1.0 - T)
+    return float(np.mean(np.exp(-2.0 * r_mm**2 * a) / a) / (wx * wy))

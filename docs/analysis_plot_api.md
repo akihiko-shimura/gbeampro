@@ -158,11 +158,11 @@ def aperture_loss(
 
 $$L = \exp\left(-\frac{2r^2}{w^2}\right)$$
 
-楕円ビーム（w_x ≠ w_y）: 強度 $I \propto \exp(-2x^2/w_x^2 - 2y^2/w_y^2)$ を極座標で表し，動径方向を解析積分する。
+楕円ビーム（w_x ≠ w_y）: 強度 $I \propto \exp(-2x^2/w_x^2 - 2y^2/w_y^2)$ を極座標で表し，動径方向を解析積分する。$\frac{1}{2\pi}\int_0^{2\pi} d\phi / a(\phi) = w_x w_y$ を使うと，損失を直接書ける。
 
-$$1 - L = \frac{1}{2\pi\, w_x w_y} \int_0^{2\pi} \frac{1 - \exp\left(-2r^2 a(\phi)\right)}{a(\phi)}\, d\phi, \qquad a(\phi) = \frac{\cos^2\phi}{w_x^2} + \frac{\sin^2\phi}{w_y^2}$$
+$$L = \frac{1}{2\pi\, w_x w_y} \int_0^{2\pi} \frac{\exp\left(-2r^2 a(\phi)\right)}{a(\phi)}\, d\phi, \qquad a(\phi) = \frac{\cos^2\phi}{w_x^2} + \frac{\sin^2\phi}{w_y^2}$$
 
-角度方向の積分は周期関数の台形則（4096 点）で評価する。
+実装は円形・楕円ともこの式 1 本で評価する（円形では上の式に厳密に一致する）。$1 - $ 透過率 の引き算を経ないので，損失が小さくても桁落ちしない。角度方向の積分は周期関数の台形則（4096 点）で評価する。
 
 > **注意**: アパーチャによる回折（下流のビーム形状の変化）は考慮しない。損失割合のみを返す。
 
