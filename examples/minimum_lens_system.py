@@ -303,5 +303,37 @@ def _(
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Aperture Clipping Loss
+
+    A circular aperture of radius **r = 0.3 mm** is placed at **z = 250 mm**.
+    The fraction of beam power blocked by the aperture is
+
+    $$L = \exp\left(-\frac{2r^2}{w^2}\right)$$
+
+    where w is the beam radius (1/e²) at the aperture.
+    """)
+    return
+
+
+@app.cell
+def _(beam, build_xy_systems, ga, n1, n2, n3, r1, r2, r3):
+    Z_APERTURE = 250.0  # mm
+    R_APERTURE = 0.3    # mm
+
+    print(f'Aperture: r = {R_APERTURE} mm at z = {Z_APERTURE:.0f} mm\n')
+    print(f"{'Step':<6}  {'N':>3}  {'w (µm)':>9}  {'loss (%)':>10}")
+    print('-' * 34)
+    for step, _n, _res in [('1', n1, r1), ('2', n2, r2), ('3', n3, r3)]:
+        _sx, _sy = build_xy_systems(beam, _res.specs, Z_APERTURE)
+        _bx = ga.beam_at(_sx.trace(beam, dz=0.5), Z_APERTURE)
+        _by = ga.beam_at(_sy.trace(beam, dz=0.5), Z_APERTURE)
+        _loss = ga.aperture_loss(_bx, R_APERTURE, beam_y=_by)
+        print(f'{step:<6}  {_n:>3}  {_bx.w_mm*1e3:>9.2f}  {_loss*100:>10.4f}')
+    return
+
+
 if __name__ == "__main__":
     app.run()

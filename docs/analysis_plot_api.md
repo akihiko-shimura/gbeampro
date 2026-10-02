@@ -7,12 +7,15 @@
   - [`find_waists`](#find_waists)
   - [`rayleigh_range`](#rayleigh_range)
   - [`confocal_parameter`](#confocal_parameter)
+  - [`beam_at`](#beam_at)
+  - [`aperture_loss`](#aperture_loss)
 - [`gbeampro.plot`](#gbeamproplot)
   - [`plot_caustic`](#plot_caustic)
   - [`plot_system`](#plot_system)
     - [素子シンボルの説明](#素子シンボルの説明)
 - [使用例](#使用例)
   - [ウェスト検出と Rayleigh 長の計算](#ウェスト検出と-rayleigh-長の計算)
+  - [アパーチャによるパワー損失](#アパーチャによるパワー損失)
   - [caustic の単純プロット](#caustic-の単純プロット)
   - [光学系の可視化（素子シンボル付き）](#光学系の可視化素子シンボル付き)
   - [複数ビームの重ね描き](#複数ビームの重ね描き)
@@ -99,6 +102,69 @@ def confocal_parameter(beam: GaussBeam) -> float
 $$b = 2 z_R = \frac{2 \pi \, n \, w^2}{\lambda}$$
 
 共焦点パラメータは，ビームが焦点付近で回折限界以内に収まる軸方向の長さの指標となる。
+
+---
+
+### `beam_at`
+
+軌跡上の任意の位置 z におけるビームを返す。
+
+```python
+def beam_at(trajectory: list[GaussBeam], z_mm: float) -> GaussBeam
+```
+
+**パラメータ**
+
+| 引数 | 説明 |
+|------|------|
+| `trajectory` | `OpticalSystem.trace()` の戻り値 |
+| `z_mm` | ビームを求める位置 (mm) |
+
+**戻り値**: 位置 `z_mm` における `GaussBeam`
+
+`z_mm` 以下で最後の軌跡点から `Propagation` で残り距離だけ自由伝搬させて求めるため，`dz` の刻みに依存しない。
+
+- `z_mm` が軌跡の終端より先の場合は，自由空間として外挿する
+- `z_mm` が軌跡の開始位置より前の場合は `ValueError`
+- `z_mm` に薄肉素子（レンズ等）がある場合は素子通過**後**のビームを返す
+
+---
+
+### `aperture_loss`
+
+光軸中心に置いた半径 r の円形アパーチャで遮られるパワーの割合を計算する。
+
+```python
+def aperture_loss(
+    beam: GaussBeam,
+    r_mm: float,
+    beam_y: GaussBeam | None = None,
+) -> float
+```
+
+**パラメータ**
+
+| 引数 | 説明 |
+|------|------|
+| `beam` | アパーチャ位置でのビーム（x 方向）。`beam_at` で取得する |
+| `r_mm` | アパーチャ半径 (mm) |
+| `beam_y` | アパーチャ位置での y 方向ビーム。`None` の場合は円形ビーム（`w_y = w_x`）として扱う |
+
+**戻り値**: 損失割合 L（0–1）。% 表示は `L * 100`
+
+**計算式**
+
+円形ビーム（w_x = w_y = w）:
+
+$$L = \exp\left(-\frac{2r^2}{w^2}\right)$$
+
+楕円ビーム（w_x ≠ w_y）: 強度 $I \propto \exp(-2x^2/w_x^2 - 2y^2/w_y^2)$ を極座標で表し，動径方向を解析積分する。
+
+$$1 - L = \frac{1}{2\pi\, w_x w_y} \int_0^{2\pi} \frac{1 - \exp\left(-2r^2 a(\phi)\right)}{a(\phi)}\, d\phi, \qquad a(\phi) = \frac{\cos^2\phi}{w_x^2} + \frac{\sin^2\phi}{w_y^2}$$
+
+角度方向の積分は周期関数の台形則（4096 点）で評価する。
+
+> **注意**: アパーチャによる回折（下流のビーム形状の変化）は考慮しない。損失割合のみを返す。
 
 ---
 
@@ -196,6 +262,31 @@ for w in waists:
     print(f'ウェスト: z={w.z_mm:.2f} mm,  w₀={w.w_mm:.4f} mm')
     print(f'  Rayleigh 長   z_R = {zR:.2f} mm')
     print(f'  共焦点パラメータ b = {b:.2f} mm')
+```
+
+### アパーチャによるパワー損失
+
+z = 250 mm に半径 0.3 mm のアパーチャがある場合の損失を計算する。
+
+```python
+from gbeampro import GaussBeam
+from gbeampro.optimize import build_xy_systems
+from gbeampro.analysis import beam_at, aperture_loss
+
+beam = GaussBeam.from_waist(wl_um=1.064, w0_mm=2.0)
+specs = [
+    {'type': 'spherical', 'z_mm': 0.77,   'f_mm': 140.0},
+    {'type': 'spherical', 'z_mm': 84.55,  'f_mm': -245.0},
+    {'type': 'spherical', 'z_mm': 136.16, 'f_mm': -30.0},
+]
+
+Z_APERTURE, R_APERTURE = 250.0, 0.3
+sx, sy = build_xy_systems(beam, specs, Z_APERTURE)
+bx = beam_at(sx.trace(beam, dz=0.5), Z_APERTURE)
+by = beam_at(sy.trace(beam, dz=0.5), Z_APERTURE)
+
+loss = aperture_loss(bx, R_APERTURE, beam_y=by)
+print(f'w = {bx.w_mm*1e3:.1f} µm,  loss = {loss*100:.3f} %')
 ```
 
 ### caustic の単純プロット

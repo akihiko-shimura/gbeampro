@@ -87,11 +87,15 @@ sys.summary(beam)          # beam state at each element + waist report
 ### Analysis (`gbeampro.analysis`)
 
 ```python
-from gbeampro.analysis import find_waists, rayleigh_range, confocal_parameter
+from gbeampro.analysis import (
+    find_waists, rayleigh_range, confocal_parameter, beam_at, aperture_loss,
+)
 
 find_waists(trajectory)      # -> list[GaussBeam] at waist locations
 rayleigh_range(beam)         # -> float, z_R (mm)
 confocal_parameter(beam)     # -> float, 2*z_R (mm)
+beam_at(trajectory, z_mm)    # -> GaussBeam at arbitrary z
+aperture_loss(beam, r_mm, beam_y=None)  # -> float, power fraction blocked by a circular aperture
 ```
 
 ### Plot (`gbeampro.plot`)
